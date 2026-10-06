@@ -359,11 +359,11 @@ struct NotchSettings: View {
     @ViewBuilder private func moduleOptions(_ module: NotchModule) -> some View {
         switch module {
         case .controls:
-            let primary = [NotchControlItem.music, .volume, .brightness]
+            let primary = [NotchControlItem.music, .volume, .brightness, .keyboardLight]
             HStack(spacing: 10) {
                 ForEach(primary) { item in
-                    toggleCard(item.title(l10n), symbol: item.symbol, value: controlBinding(item), available: item.isAvailable(),
-                               reason: controlReason(item), reservesReason: !primary.allSatisfy { $0.isAvailable() },
+                    toggleCard(item.title(l10n), symbol: item.symbol, value: controlBinding(item), available: controlAvailable(item),
+                               reason: controlReason(item), reservesReason: !primary.allSatisfy(controlAvailable),
                                unavailableAction: controlUnavailableAction(item))
                 }
             }
@@ -691,6 +691,7 @@ struct NotchSettings: View {
     /// A control that opens a page is off while that page is hidden, or while
     /// the feature behind it is disabled; the others follow their feature.
     private func controlReason(_ item: NotchControlItem) -> String {
+        if item == .keyboardLight, item.isAvailable() { return editor.keyboardLightUnavailable }
         switch item.setupRequirement {
         case .feature(let feature): return enableFeatureReason(feature)
         case .page(let module, let feature): return pageReason(module, feature: feature)
@@ -698,7 +699,13 @@ struct NotchSettings: View {
         }
     }
 
+    /// The keyboard light also needs a keyboard that has one.
+    private func controlAvailable(_ item: NotchControlItem) -> Bool {
+        item.isAvailable() && (item != .keyboardLight || BrightnessService.keyboardLightIsSupported)
+    }
+
     private func controlUnavailableAction(_ item: NotchControlItem) -> (() -> Void)? {
+        if item == .keyboardLight, item.isAvailable() { return nil }
         switch item.setupRequirement {
         case .feature(let feature):
             return { showFeature(feature) }
@@ -849,7 +856,7 @@ struct NotchSettings: View {
         let stored = controlOrder.split(separator: ",").compactMap { NotchControlItem(rawValue: String($0)) }
         var seen = Set<NotchControlItem>()
         return (stored + NotchControlItem.allCases).filter {
-            $0 != .volume && $0 != .brightness && $0 != .music && seen.insert($0).inserted
+            !$0.isLevel && $0 != .music && seen.insert($0).inserted
         }
     }
 

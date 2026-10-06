@@ -151,8 +151,8 @@ struct NotchLayoutEditor: View {
         if layout == .custom { return previewGeometry.customHeight }
         let items = NotchSupport.controls()
         return previewGeometry.expandedSize(module: .controls,
-            shortcutCount: items.filter { $0 != .volume && $0 != .brightness && $0 != .music }.count,
-            sliderCount: items.filter { $0 == .volume || $0 == .brightness }.count,
+            shortcutCount: items.filter { !$0.isLevel && $0 != .music }.count,
+            sliderCount: items.filter(\.isLevel).count,
             controlsHaveMusic: items.contains(.music)).height
     }
 
@@ -252,8 +252,8 @@ struct NotchLayoutEditor: View {
     /// components as the real Controls page, at the island's real size.
     private var islandPreview: some View {
         let items = NotchSupport.controls()
-        let levels = items.filter { $0 == .volume || $0 == .brightness }
-        let shortcuts = items.filter { $0 != .volume && $0 != .brightness && $0 != .music }
+        let levels = items.filter(\.isLevel)
+        let shortcuts = items.filter { !$0.isLevel && $0 != .music }
         let contentWidth = max(0, actualWidth - NotchLayout.horizontalInset * 2)
         let contentHeight = max(0, actualHeight - previewGeometry.headerTopInset - previewGeometry.headerChromeHeight)
         let controls = NotchLayout.controls(hasCards: items.contains(.music) || !levels.isEmpty,
@@ -402,7 +402,7 @@ struct NotchActionChooser: View {
                             .foregroundStyle(.secondary).frame(maxWidth: .infinity, minHeight: 120)
                     }
                     group(editor.sectionActions, actions: [.explore, .settings] + NotchModule.allCases.map(NotchQuickAction.module))
-                    group(editor.quickActions, actions: [.pin] + NotchControlItem.allCases.filter { $0 != .volume && $0 != .brightness }.map(NotchQuickAction.control))
+                    group(editor.quickActions, actions: [.pin] + NotchControlItem.allCases.filter { !$0.isLevel }.map(NotchQuickAction.control))
                 }.padding(2)
             }.frame(height: 200)
         }.padding(title.isEmpty ? 0 : 16).frame(width: title.isEmpty ? nil : 340)
