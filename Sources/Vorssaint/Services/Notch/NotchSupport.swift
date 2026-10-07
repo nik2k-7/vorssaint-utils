@@ -430,6 +430,15 @@ enum NotchLayout {
         max(40, height - 24) + 12 + 132 + 24
     }
 
+    /// Level cards keep their title and device row only where every card in
+    /// the row has one and the titles fit: a card alone, or volume beside
+    /// brightness. The keyboard light has no device to choose, so beside it,
+    /// and three across, every card folds to its readout and they line up.
+    static func levelCardsShowDetails(_ levels: [NotchControlItem], height: CGFloat) -> Bool {
+        guard height >= 88 else { return false }
+        return levels.count == 1 || (levels.count == 2 && !levels.contains(.keyboardLight))
+    }
+
     /// The home page: one row of cards (playback and levels) over a rail of
     /// shortcuts. A tight budget shortens the cards before it drops a row.
     static func controls(hasCards: Bool, shortcutCount: Int, width: CGFloat, height: CGFloat) -> NotchControlsLayout {
@@ -978,6 +987,12 @@ enum NotchControlItem: String, CaseIterable, Identifiable {
     /// A level draws as a slider in the card row; everything else is a tile.
     var isLevel: Bool { self == .volume || self == .brightness || self == .keyboardLight }
 
+    /// Whether this Mac has a keyboard light. Only the brightness service can
+    /// ask the hardware, so launch points this at it before anything reads
+    /// the controls. Without it, a level restored from a Mac that has one
+    /// would sit in the island as a dead card that Settings cannot hide.
+    static var keyboardLightIsSupported: () -> Bool = { true }
+
     var symbol: String {
         switch self {
         case .volume: return "speaker.wave.2.fill"
@@ -1022,7 +1037,8 @@ enum NotchControlItem: String, CaseIterable, Identifiable {
         switch self {
         case .volume: return AppFeature.mixer.isAvailable(in: defaults)
         case .mixer: return AppFeature.mixer.isAvailable(in: defaults) && NotchSupport.modules(in: defaults).contains(.mixer)
-        case .brightness, .keyboardLight: return AppFeature.brightness.isAvailable(in: defaults)
+        case .brightness: return AppFeature.brightness.isAvailable(in: defaults)
+        case .keyboardLight: return AppFeature.brightness.isAvailable(in: defaults) && Self.keyboardLightIsSupported()
         case .keepAwake: return AppFeature.keepAwake.isAvailable(in: defaults)
         case .microphone: return AppFeature.micMute.isAvailable(in: defaults)
         case .screenshot: return AppFeature.screenshot.isAvailable(in: defaults)

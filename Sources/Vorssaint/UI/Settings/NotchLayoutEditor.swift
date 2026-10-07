@@ -318,10 +318,11 @@ struct NotchLayoutEditor: View {
                         .frame(width: 160, height: height)
                         .modifier(NotchControlSurface(cornerRadius: 18, interactive: false))
                 } else if let single = levels.first {
-                    levelCard(single, height: height).frame(width: 160)
+                    levelCard(single, height: height, details: height >= 88).frame(width: 160)
                 }
             } else {
-                ForEach(levels) { levelCard($0, height: height).frame(maxWidth: .infinity) }
+                let details = NotchLayout.levelCardsShowDetails(levels, height: height)
+                ForEach(levels) { levelCard($0, height: height, details: details).frame(maxWidth: .infinity) }
             }
         }
         .frame(height: height)
@@ -345,19 +346,18 @@ struct NotchLayoutEditor: View {
         .modifier(NotchControlSurface(cornerRadius: 18, interactive: false))
     }
 
-    private func levelCard(_ item: NotchControlItem, height: CGFloat) -> some View {
-        let showsDevice = height >= 88
-        return VStack(spacing: 6) {
+    private func levelCard(_ item: NotchControlItem, height: CGFloat, details showsDevice: Bool) -> some View {
+        VStack(spacing: 6) {
             HStack(spacing: 7) {
                 Image(systemName: item.symbol).font(.system(size: 12, weight: .medium)).frame(width: 18, height: 18)
-                Text(item.title(l10n)).lineLimit(1)
+                if showsDevice { Text(item.title(l10n)).lineLimit(1) }
                 Spacer(minLength: 0)
                 Text(item == .volume ? "45%" : "65%").monospacedDigit()
             }
             .font(.system(size: 12, weight: .semibold))
             NotchMeter(value: item == .volume ? 0.45 : 0.65, height: 22)
                 .frame(height: 28)
-            if showsDevice {
+            if showsDevice, item != .keyboardLight {
                 HStack(spacing: 4) {
                     Text(l10n.s.mixerSystemOutputTitle).lineLimit(1)
                     Image(systemName: "chevron.down").font(.system(size: 8, weight: .semibold))

@@ -69,8 +69,9 @@ struct NotchControlsView: View {
                     level(single, style: .card, showsDevice: height >= 88).frame(width: 160, height: height)
                 }
             } else {
+                let details = NotchLayout.levelCardsShowDetails(levels, height: height)
                 ForEach(levels) { item in
-                    level(item, style: .card, showsDevice: height >= 88).frame(maxWidth: .infinity).frame(height: height)
+                    level(item, style: .card, showsDevice: details).frame(maxWidth: .infinity).frame(height: height)
                 }
             }
         }
@@ -309,7 +310,7 @@ struct NotchAudioControls: View {
 
     private var readoutMenu: some View {
         NotchLevelReadoutMenu(title: l10n.s.mixerSystemOutputTitle, items: outputItems) { percent }
-            .help(deviceName)
+            .help(mixer.outputSwitchError ?? deviceName)
             .accessibilityValue(deviceName)
     }
 
@@ -449,8 +450,8 @@ private struct NotchBrightnessControls: View {
 }
 
 /// The keyboard light as a level beside volume and brightness. It has no
-/// device to choose, so the row ends on the bare percent, held to the width
-/// the other rows give their readout menu so the three sliders line up.
+/// device to choose, so it ends on the bare percent, in the room the others
+/// give their readout menu.
 private struct NotchKeyboardLightControls: View {
     var style: NotchLevelStyle = .card
     var showsTitle = true
@@ -465,8 +466,7 @@ private struct NotchKeyboardLightControls: View {
                 HStack(spacing: 8) {
                     glyph
                     slider
-                    percent.frame(width: 36, alignment: .trailing)
-                        .padding(.leading, 4).padding(.trailing, 17)
+                    readout
                 }
                 .frame(height: 28)
                 .help(title)
@@ -474,9 +474,14 @@ private struct NotchKeyboardLightControls: View {
                 VStack(spacing: 6) {
                     HStack(spacing: 7) {
                         glyph
-                        if showsTitle { Text(title).lineLimit(1) }
-                        Spacer(minLength: 0)
-                        percent
+                        if showsTitle {
+                            Text(title).lineLimit(1)
+                            Spacer(minLength: 0)
+                            percent
+                        } else {
+                            Spacer(minLength: 0)
+                            readout
+                        }
                     }
                     .font(.system(size: 12, weight: .semibold))
                     slider
@@ -506,6 +511,17 @@ private struct NotchKeyboardLightControls: View {
         .buttonStyle(NotchButtonStyle(cornerRadius: 6))
         .disabled(service.keyboardLightEnabled == nil)
         .accessibilityLabel(title)
+    }
+
+    /// The readout menu's layout with its chevron hidden, so this slider
+    /// starts and ends where the volume and brightness ones do.
+    private var readout: some View {
+        HStack(spacing: 5) {
+            percent.frame(width: 36, alignment: .trailing)
+            Image(systemName: "chevron.down").font(.system(size: 8, weight: .semibold)).hidden()
+        }
+        .padding(.horizontal, 4)
+        .frame(height: 24)
     }
 
     @ViewBuilder private var percent: some View {
